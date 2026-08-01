@@ -29,11 +29,11 @@ export default function AuroraBackground({
 	colors = siteContent.backgroundColors && siteContent.backgroundColors.length ? siteContent.backgroundColors : FALLBACK_COLORS,
 	minRadius = 280,
 	maxRadius = 560,
-	speed = 0.55,
+	speed = 0.9,
 	noiseScale = 0.0006,
-	noiseTimeScale = 0.00025,
+	noiseTimeScale = 0.00035,
 	targetFps = 30,
-	blur = 10,
+	blur = 8,
 	regenerateKey = 0
 }) {
 	const ref = useRef<HTMLCanvasElement>(null)
@@ -183,7 +183,7 @@ export default function AuroraBackground({
 
 	return (
 		<div
-			className='fixed inset-0 z-0 overflow-hidden'
+			className='aurora-animated fixed inset-0 z-0 overflow-hidden'
 			style={{ background: fallbackGradient, backgroundColor: 'transparent' }}>
 			<canvas ref={ref} className='h-full w-full' style={{ display: 'block' }} />
 		</div>

@@ -177,3 +177,20 @@
 		animation: heartbeat-frame 0.8s ease-in-out;
 	}
 }
+
+/* Aurora background: slow colour cycling so the gradient feels alive.
+   Respects prefers-reduced-motion: no animation when the user asks for less motion. */
+@keyframes aurora-hue {
+	0% {
+		filter: hue-rotate(0deg);
+	}
+	100% {
+		filter: hue-rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.aurora-animated {
+		animation: aurora-hue 16s linear infinite;
+	}
+}

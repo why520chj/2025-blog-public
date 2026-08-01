@@ -52,15 +52,15 @@ export default function Layout({ children }: PropsWithChildren) {
 					}}
 				/>
 			)}
-			<AuroraBackground colors={siteContent.backgroundColors} blur={20} regenerateKey={regenerateKey} />
+			<AuroraBackground colors={siteContent.backgroundColors} blur={14} regenerateKey={regenerateKey} />
 
 			{/* 虚化层：在动态背景之上、内容之下再叠加一层轻模糊 */}
 			<div
 				className='pointer-events-none fixed inset-0 z-[1]'
 				style={{
-					backdropFilter: 'blur(8px)',
-					WebkitBackdropFilter: 'blur(8px)',
-					background: 'rgba(255,255,255,0.02)'
+					backdropFilter: 'blur(6px)',
+					WebkitBackdropFilter: 'blur(6px)',
+					background: 'rgba(255,255,255,0.015)'
 				}}
 			/>
 

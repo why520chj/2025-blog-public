@@ -14,8 +14,9 @@
 
 @layer base {
 	html {
-		@apply text-primary bg-bg h-full leading-tight;
+		@apply text-primary h-full leading-tight;
 		scroll-behavior: smooth;
+		background-color: transparent;
 	}
 
 	body {

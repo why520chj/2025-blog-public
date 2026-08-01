@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { motion } from 'motion/react'
 import siteContent from '@/config/site-content.json'
 import { makeNoise2D, rand } from './utils'
 
@@ -12,15 +11,15 @@ import { makeNoise2D, rand } from './utils'
 const FALLBACK_COLORS = ['#8fdbe9', '#f7da39', '#b6a8ff', '#ff9ecd']
 
 export default function AuroraBackground({
-	count = 6,
+	count = 8,
 	colors = siteContent.backgroundColors && siteContent.backgroundColors.length ? siteContent.backgroundColors : FALLBACK_COLORS,
-	minRadius = 320,
-	maxRadius = 640,
-	speed = 0.18,
+	minRadius = 280,
+	maxRadius = 560,
+	speed = 0.22,
 	noiseScale = 0.0006,
 	noiseTimeScale = 0.00012,
 	targetFps = 30,
-	blur = 50,
+	blur = 14,
 	startDelayMs = 300,
 	regenerateKey = 0
 }) {
@@ -88,8 +87,8 @@ export default function AuroraBackground({
 			ctx.clearRect(0, 0, width, height)
 			for (const b of blobs) {
 				ctx.save()
-				ctx.filter = `blur(${blur}px)`
-				ctx.globalAlpha = 0.85
+			ctx.filter = `blur(${blur}px)`
+			ctx.globalAlpha = 0.98
 				const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r)
 				grad.addColorStop(0, b.color)
 				grad.addColorStop(1, 'rgba(0,0,0,0)')
@@ -156,12 +155,8 @@ export default function AuroraBackground({
 	}, [colors, regenerateKey, count, minRadius, maxRadius, speed, noiseScale, noiseTimeScale, targetFps, blur])
 
 	return (
-		<motion.div
-			animate={{ opacity: 1 }}
-			initial={{ opacity: 0 }}
-			transition={{ duration: 1 }}
-			className='fixed inset-0 z-0 overflow-hidden'>
+		<div className='fixed inset-0 z-0 overflow-hidden'>
 			<canvas ref={ref} className='h-full w-full' style={{ display: 'block' }} />
-		</motion.div>
+		</div>
 	)
 }

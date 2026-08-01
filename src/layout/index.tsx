@@ -1,5 +1,6 @@
 'use client'
 import { PropsWithChildren } from 'react'
+import IntroAnimation from '@/components/intro-animation'
 import { useCenterInit } from '@/hooks/use-center'
 import AuroraBackground from './backgrounds/aurora-background'
 import NavCard from '@/components/nav-card'
@@ -23,6 +24,7 @@ export default function Layout({ children }: PropsWithChildren) {
 
 	return (
 		<>
+			<IntroAnimation />
 			<Toaster
 				position='bottom-right'
 				richColors

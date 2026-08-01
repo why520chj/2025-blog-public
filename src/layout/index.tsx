@@ -1,7 +1,7 @@
 'use client'
 import { PropsWithChildren } from 'react'
 import { useCenterInit } from '@/hooks/use-center'
-import BlurredBubblesBackground from './backgrounds/blurred-bubbles'
+import AuroraBackground from './backgrounds/aurora-background'
 import NavCard from '@/components/nav-card'
 import { Toaster } from 'sonner'
 import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react'
@@ -50,7 +50,17 @@ export default function Layout({ children }: PropsWithChildren) {
 					}}
 				/>
 			)}
-			<BlurredBubblesBackground colors={siteContent.backgroundColors} regenerateKey={regenerateKey} />
+			<AuroraBackground colors={siteContent.backgroundColors} blur={30} regenerateKey={regenerateKey} />
+
+			{/* 虚化层：在动态背景之上、内容之下再叠加一层模糊 */}
+			<div
+				className='pointer-events-none fixed inset-0 z-[1]'
+				style={{
+					backdropFilter: 'blur(24px)',
+					WebkitBackdropFilter: 'blur(24px)',
+					background: 'rgba(255,255,255,0.06)'
+				}}
+			/>
 
 			<main className='relative z-10 h-full'>
 				{children}

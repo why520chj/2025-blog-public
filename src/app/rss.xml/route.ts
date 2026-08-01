@@ -2,7 +2,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import siteContent from '@/config/site-content.json'
-import blogIndex from '@/../public/blogs/index.json'
 import type { BlogIndexItem } from '@/app/blog/types'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yysuni.com'
@@ -11,7 +10,15 @@ const SITE_ORIGIN = SITE_URL.replace(/\/$/, '')
 const FEED_URL = `${SITE_ORIGIN}${FEED_PATH}`
 const PUBLIC_DIR = path.join(process.cwd(), 'public')
 
-const blogs = blogIndex as BlogIndexItem[]
+function loadBlogs(): BlogIndexItem[] {
+	const file = path.join(PUBLIC_DIR, 'blogs/index.json')
+	try {
+		if (!fs.existsSync(file)) return []
+		return JSON.parse(fs.readFileSync(file, 'utf-8')) as BlogIndexItem[]
+	} catch {
+		return []
+	}
+}
 
 const escapeXml = (value: string): string =>
 	value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
@@ -93,6 +100,7 @@ export function GET(): Response {
 	const title = siteContent.meta?.title || '2025 Blog'
 	const description = siteContent.meta?.description || 'Latest updates from 2025 Blog'
 
+	const blogs = loadBlogs()
 	const items = blogs
 		.filter(item => item?.slug)
 		.map(serializeItem)

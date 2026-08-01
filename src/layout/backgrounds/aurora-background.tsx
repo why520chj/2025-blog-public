@@ -29,11 +29,11 @@ export default function AuroraBackground({
 	colors = siteContent.backgroundColors && siteContent.backgroundColors.length ? siteContent.backgroundColors : FALLBACK_COLORS,
 	minRadius = 280,
 	maxRadius = 560,
-	speed = 0.22,
+	speed = 0.55,
 	noiseScale = 0.0006,
-	noiseTimeScale = 0.00012,
+	noiseTimeScale = 0.00025,
 	targetFps = 30,
-	blur = 14,
+	blur = 10,
 	regenerateKey = 0
 }) {
 	const ref = useRef<HTMLCanvasElement>(null)
@@ -50,8 +50,10 @@ export default function AuroraBackground({
 		let width = 0
 		let height = 0
 		const DPR = Math.min(2, window.devicePixelRatio || 1)
-
 		const palette = colors && colors.length ? colors : FALLBACK_COLORS
+		const blobs: { x: number; y: number; r: number; color: string; vx: number; vy: number; jitter: number }[] = []
+
+		const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 		function resize() {
 			width = canvas!.clientWidth
@@ -61,44 +63,34 @@ export default function AuroraBackground({
 			context.setTransform(1, 0, 0, 1, 0, 0)
 			context.scale(DPR, DPR)
 		}
-		resize()
 
-		let resizeTimer: number | null = null
-		const ro = new ResizeObserver(() => {
-			if (resizeTimer !== null) window.clearTimeout(resizeTimer)
-			resizeTimer = window.setTimeout(() => {
-				resize()
-				draw()
-			}, 200)
-		})
-		ro.observe(canvas)
-
-		// Poisson-ish placement to avoid heavy clusters
-		const blobs: { x: number; y: number; r: number; color: string; vx: number; vy: number; jitter: number }[] = []
-		const minDist = Math.max(minRadius * 0.25, 120)
-		let tries = 0
-		while (blobs.length < count && tries < 5000) {
-			tries++
-			const r = rand(minRadius, maxRadius)
-			const x = rand(0, Math.max(1, width))
-			const y = rand(0, Math.max(1, height))
-			let ok = true
-			for (const b of blobs) {
-				if (Math.hypot(b.x - x, b.y - y) < (b.r + r) * 0.5) {
-					ok = false
-					break
+		function placeBlobs() {
+			blobs.length = 0
+			const minDist = Math.max(minRadius * 0.25, 120)
+			let tries = 0
+			while (blobs.length < count && tries < 5000) {
+				tries++
+				const r = rand(minRadius, maxRadius)
+				const x = rand(0, Math.max(1, width))
+				const y = rand(0, Math.max(1, height))
+				let ok = true
+				for (const b of blobs) {
+					if (Math.hypot(b.x - x, b.y - y) < (b.r + r) * 0.5) {
+						ok = false
+						break
+					}
 				}
-			}
-			if (ok) {
-				blobs.push({
-					x,
-					y,
-					r,
-					color: palette[blobs.length % palette.length],
-					vx: 0,
-					vy: 0,
-					jitter: rand(0.7, 1.3)
-				})
+				if (ok) {
+					blobs.push({
+						x,
+						y,
+						r,
+						color: palette[blobs.length % palette.length],
+						vx: 0,
+						vy: 0,
+						jitter: rand(0.7, 1.3)
+					})
+				}
 			}
 		}
 
@@ -107,7 +99,7 @@ export default function AuroraBackground({
 			for (const b of blobs) {
 				context.save()
 				context.filter = `blur(${blur}px)`
-				context.globalAlpha = 0.98
+				context.globalAlpha = 1
 				const grad = context.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r)
 				grad.addColorStop(0, b.color)
 				grad.addColorStop(1, 'rgba(0,0,0,0)')
@@ -133,11 +125,6 @@ export default function AuroraBackground({
 			}
 		}
 
-		const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-
-		// Draw immediately so the background is visible before any intro fade finishes
-		draw()
-
 		const FRAME = 1000 / targetFps
 		let last = 0
 		let acc = 0
@@ -159,9 +146,33 @@ export default function AuroraBackground({
 			animRef.current = requestAnimationFrame(frame)
 		}
 
-		if (!reduceMotion) {
-			animRef.current = requestAnimationFrame(frame)
+		function start() {
+			resize()
+			// If the canvas has no layout size yet, wait for the next frame and retry.
+			// This commonly happens during SSR hydration before the browser lays out the element.
+			if (width === 0 || height === 0) {
+				animRef.current = requestAnimationFrame(start)
+				return
+			}
+			placeBlobs()
+			draw()
+			if (!reduceMotion) {
+				animRef.current = requestAnimationFrame(frame)
+			}
 		}
+
+		let resizeTimer: number | null = null
+		const ro = new ResizeObserver(() => {
+			if (resizeTimer !== null) window.clearTimeout(resizeTimer)
+			resizeTimer = window.setTimeout(() => {
+				resize()
+				placeBlobs()
+				draw()
+			}, 200)
+		})
+		ro.observe(canvas)
+
+		start()
 
 		return () => {
 			cancelAnimationFrame(animRef.current)

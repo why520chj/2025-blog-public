@@ -38,13 +38,9 @@
 		{
 			"id": "",
 			"url": ""
-		},
-		{
-			"id": "11a82bb817b54c05",
-			"url": "/images/background/11a82bb817b54c05.png"
 		}
 	],
-	"currentBackgroundImageId": "11a82bb817b54c05",
+	"currentBackgroundImageId": "",
 	"socialButtons": [
 		{
 			"id": "email",

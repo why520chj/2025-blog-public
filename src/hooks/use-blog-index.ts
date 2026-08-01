@@ -4,10 +4,12 @@ import type { BlogIndexItem } from '@/app/blog/types'
 
 export type { BlogIndexItem } from '@/app/blog/types'
 
-// 改进 fetcher，抛出状态码以便处理 404
+// 兼容文章目录不存在的情况：文章被清空后 public/blogs/index.json 会 404，
+// 此时返回空数组，避免 SWR 反复重试并刷屏 Console。
 const fetcher = async (url: string) => {
 	const res = await fetch(url, { cache: 'no-store' })
 	if (!res.ok) {
+		if (res.status === 404) return []
 		const error: any = new Error('Fetch failed')
 		error.status = res.status
 		throw error

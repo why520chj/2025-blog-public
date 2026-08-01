@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import siteContent from '@/config/site-content.json'
 import { makeNoise2D, rand } from './utils'
 
@@ -7,8 +7,22 @@ import { makeNoise2D, rand } from './utils'
  * - Several large soft color blobs drift via a Perlin/Simplex flow field
  * - Each blob is a radial gradient (color -> transparent) for an "aurora" look
  * - Designed to sit behind content; a separate blur layer is added in the layout
+ * - Includes a CSS gradient fallback so the background is never plain white,
+ *   even before the first canvas frame renders.
  */
 const FALLBACK_COLORS = ['#8fdbe9', '#f7da39', '#b6a8ff', '#ff9ecd']
+
+function buildGradient(colors: string[]) {
+	const palette = colors && colors.length ? colors : FALLBACK_COLORS
+	const used = palette.length >= 3 ? palette : [...palette, ...FALLBACK_COLORS]
+	const stops = [
+		{ x: 15, y: 20, c: used[0], r: 50 },
+		{ x: 85, y: 25, c: used[1 % used.length], r: 55 },
+		{ x: 70, y: 80, c: used[2 % used.length], r: 55 },
+		{ x: 25, y: 75, c: used[3 % used.length] || used[0], r: 45 }
+	]
+	return stops.map(s => `radial-gradient(circle at ${s.x}% ${s.y}%, ${s.c} 0%, transparent ${s.r}%)`).join(', ')
+}
 
 export default function AuroraBackground({
 	count = 8,
@@ -20,17 +34,19 @@ export default function AuroraBackground({
 	noiseTimeScale = 0.00012,
 	targetFps = 30,
 	blur = 14,
-	startDelayMs = 300,
 	regenerateKey = 0
 }) {
 	const ref = useRef<HTMLCanvasElement>(null)
 	const noise = useRef(makeNoise2D())
 	const animRef = useRef(0)
+	const fallbackGradient = useMemo(() => buildGradient(colors), [colors])
 
 	useEffect(() => {
 		const canvas = ref.current
 		if (!canvas) return
-		const ctx = canvas.getContext('2d')!
+		const ctx = canvas.getContext('2d')
+		if (!ctx) return
+		const context = ctx
 		let width = 0
 		let height = 0
 		const DPR = Math.min(2, window.devicePixelRatio || 1)
@@ -42,15 +58,18 @@ export default function AuroraBackground({
 			height = canvas!.clientHeight
 			canvas!.width = Math.floor(width * DPR)
 			canvas!.height = Math.floor(height * DPR)
-			ctx.setTransform(1, 0, 0, 1, 0, 0)
-			ctx.scale(DPR, DPR)
+			context.setTransform(1, 0, 0, 1, 0, 0)
+			context.scale(DPR, DPR)
 		}
 		resize()
 
 		let resizeTimer: number | null = null
 		const ro = new ResizeObserver(() => {
 			if (resizeTimer !== null) window.clearTimeout(resizeTimer)
-			resizeTimer = window.setTimeout(() => resize(), 500)
+			resizeTimer = window.setTimeout(() => {
+				resize()
+				draw()
+			}, 200)
 		})
 		ro.observe(canvas)
 
@@ -84,19 +103,19 @@ export default function AuroraBackground({
 		}
 
 		function draw() {
-			ctx.clearRect(0, 0, width, height)
+			context.clearRect(0, 0, width, height)
 			for (const b of blobs) {
-				ctx.save()
-			ctx.filter = `blur(${blur}px)`
-			ctx.globalAlpha = 0.98
-				const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r)
+				context.save()
+				context.filter = `blur(${blur}px)`
+				context.globalAlpha = 0.98
+				const grad = context.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r)
 				grad.addColorStop(0, b.color)
 				grad.addColorStop(1, 'rgba(0,0,0,0)')
-				ctx.fillStyle = grad
-				ctx.beginPath()
-				ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)
-				ctx.fill()
-				ctx.restore()
+				context.fillStyle = grad
+				context.beginPath()
+				context.arc(b.x, b.y, b.r, 0, Math.PI * 2)
+				context.fill()
+				context.restore()
 			}
 		}
 
@@ -115,6 +134,9 @@ export default function AuroraBackground({
 		}
 
 		const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+		// Draw immediately so the background is visible before any intro fade finishes
+		draw()
 
 		const FRAME = 1000 / targetFps
 		let last = 0
@@ -137,25 +159,21 @@ export default function AuroraBackground({
 			animRef.current = requestAnimationFrame(frame)
 		}
 
-		let timer: number | undefined
-		if (reduceMotion) {
-			draw()
-		} else {
-			timer = window.setTimeout(() => {
-				animRef.current = requestAnimationFrame(frame)
-			}, startDelayMs)
+		if (!reduceMotion) {
+			animRef.current = requestAnimationFrame(frame)
 		}
 
 		return () => {
 			cancelAnimationFrame(animRef.current)
-			if (timer !== undefined) window.clearTimeout(timer)
 			ro.disconnect()
 			if (resizeTimer !== null) window.clearTimeout(resizeTimer)
 		}
 	}, [colors, regenerateKey, count, minRadius, maxRadius, speed, noiseScale, noiseTimeScale, targetFps, blur])
 
 	return (
-		<div className='fixed inset-0 z-0 overflow-hidden'>
+		<div
+			className='fixed inset-0 z-0 overflow-hidden'
+			style={{ background: fallbackGradient, backgroundColor: 'transparent' }}>
 			<canvas ref={ref} className='h-full w-full' style={{ display: 'block' }} />
 		</div>
 	)

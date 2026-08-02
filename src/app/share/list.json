@@ -282,5 +282,15 @@
 			"AI"
 		],
 		"stars": 4
+	},
+	{
+		"name": "校徽大全",
+		"logo": "https://www.urongda.com/favicon/favicon-48x48.png",
+		"url": "https://www.urongda.com/",
+		"description": "收录了大学的校徽，并且天津师范大学也在里面哈哈",
+		"tags": [
+			"校徽"
+		],
+		"stars": 4
 	}
 ]
